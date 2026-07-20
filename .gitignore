@@ -91,3 +91,17 @@ coverage.xml
 *.tmp
 *.bak
 *.orig
+
+# Local upstream repo cache for location repair (#4)
+.repo_cache/
+
+# Local-only / noisy artifacts under fix_locations
+tools/fix_locations/out/competitor_diffs/
+tools/fix_locations/out/archive/
+tools/fix_locations/out/fetch_retry/
+tools/fix_locations/out/*.log
+tools/fix_locations/out/*.log.err
+tools/fix_locations/out/night_run.pid
+tools/fix_locations/out/progress.jsonl
+tools/fix_locations/out/entries.fixed.partial.jsonl
+tools/fix_locations/out/_competitor_scan.md
