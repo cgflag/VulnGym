@@ -124,6 +124,15 @@ class TestRepairNode(unittest.TestCase):
         self.assertEqual(r.status, "fixed")
         self.assertEqual(r.new_line, "2-3")
 
+    def _patch_list_repo_files(self, files: list[Path]):
+        real = M.list_repo_files
+
+        def fake_list(path: Path):
+            return [path / rel for rel in files]
+
+        M.list_repo_files = fake_list  # type: ignore[assignment]
+        self.addCleanup(lambda: setattr(M, "list_repo_files", real))
+
     def test_repo_wide_unique(self):
         repo = self._repo(
             {
@@ -131,19 +140,33 @@ class TestRepairNode(unittest.TestCase):
                 "right.py": "needle_unique_zzz()\n",
             }
         )
-        # fake git ls-files via monkeypatch
-        real = M.list_repo_files
-
-        def fake_list(path: Path):
-            return [path / "wrong.py", path / "right.py"]
-
-        M.list_repo_files = fake_list  # type: ignore[assignment]
-        self.addCleanup(lambda: setattr(M, "list_repo_files", real))
+        self._patch_list_repo_files([Path("wrong.py"), Path("right.py")])
         node = {"file": "missing.py", "line": 1, "code": "needle_unique_zzz()"}
         r = M.repair_node(repo, node, allow_repo_wide=True)
         self.assertEqual(r.status, "fixed")
         self.assertEqual(r.strategy, "repo_wide_unique")
         self.assertEqual(r.new_file, "right.py")
+
+    def test_repo_wide_ambiguous(self):
+        repo = self._repo(
+            {
+                "a.py": "shared_needle_abc()\n",
+                "b.py": "shared_needle_abc()\n",
+            }
+        )
+        self._patch_list_repo_files([Path("a.py"), Path("b.py")])
+        node = {"file": "missing.py", "line": 1, "code": "shared_needle_abc()"}
+        r = M.repair_node(repo, node, allow_repo_wide=True)
+        self.assertEqual(r.status, "needs_human")
+        self.assertEqual(r.reason, "repo_wide_ambiguous")
+
+    def test_repo_wide_no_match(self):
+        repo = self._repo({"a.py": "other()\n"})
+        self._patch_list_repo_files([Path("a.py")])
+        node = {"file": "missing.py", "line": 1, "code": "totally_absent_xyz()"}
+        r = M.repair_node(repo, node, allow_repo_wide=True)
+        self.assertEqual(r.status, "needs_human")
+        self.assertEqual(r.reason, "repo_wide_no_match")
 
 
 class TestSchemaSmokeHelpers(unittest.TestCase):
