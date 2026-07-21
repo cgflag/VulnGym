@@ -41,11 +41,28 @@ python tools/fix_locations/scripts/export_high_confidence.py
 python tools/fix_locations/scripts/make_spotcheck_sheet.py
 ```
 
+desc 机械同步（仅明确行号锚点；不覆盖 `entries.fixed.jsonl`）：
+
+```bash
+python tools/fix_locations/scripts/desc_sync_dryrun.py
+python tools/fix_locations/scripts/desc_sync_apply.py
+```
+
+对接 [#49](https://github.com/Tencent/VulnGym/pull/49) 人审队列（剔除 `fetch_failed`）：
+
+```bash
+python tools/fix_locations/scripts/export_queue_for_49.py
+```
+
+说明见 `out/COMPAT_WITH_49.md`、冒烟见 `out/COMPAT_49_SMOKE.md`。
+
 产物在 `tools/fix_locations/out/`：
 
 - `fix_diff.csv` — 自动修复记录
 - `needs_human.csv` — 无法唯一确定的节点
-- `entries.fixed.jsonl` — 仅在 `--apply` 时生成
+- `needs_human.for_49.csv` — 供 #49 `init` 的队列
+- `entries.fixed.jsonl` — 仅 file/line 修复
+- `entries.fixed.desc_synced.jsonl` — 另含机械 desc 锚点同步（本批 10 处）
 
 上游仓库缓存目录：`.repo_cache/`（已加入 `.gitignore`）。
 

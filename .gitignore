@@ -105,3 +105,6 @@ tools/fix_locations/out/night_run.pid
 tools/fix_locations/out/progress.jsonl
 tools/fix_locations/out/entries.fixed.partial.jsonl
 tools/fix_locations/out/_competitor_scan.md
+tools/fix_locations/out/_pr49_smoke/
+tools/fix_locations/out/repo_wide/
+tools/fix_locations/out/repo_wide_sample/
