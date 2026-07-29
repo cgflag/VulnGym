@@ -1,0 +1,44 @@
+{
+  "entry_id": "entry-00100",
+  "report_id": "GHSA-5XRP-6693-JJX9",
+  "note": "Draft AFTER nodes; verify stays 0. Same advisory as entry-00099; this entry emphasizes parameter-resolve → sanitizer-binding → eval path (not sanitizer definition as sink).",
+  "entry_point": {
+    "file": "packages/workflow/src/expression.ts",
+    "line": 368,
+    "code": "\tresolveSimpleParameterValue(",
+    "desc": "节点参数求值顶层方法：接收工作流节点配置中的原始表达式字符串 parameterValue，随后装配沙箱 data 并调用 renderExpression。是用户表达式进入求值管线的 API 层入口（相对 00099 的 HTTP 入口）。"
+  },
+  "critical_operation": {
+    "file": "packages/workflow/src/expression-evaluator-proxy.ts",
+    "line": "19-21",
+    "code": "export const evaluateExpression: Evaluator = (expr, data) => {\n\treturn evaluator(expr, data);\n};",
+    "desc": "与 entry-00099 同一执行 sink：无论经 with+Identifier constructor 还是经 __sanitize 绑定被绕过，最终任意代码仍在 tournamentEvaluator.execute 落地。sanitizer 函数定义本身不是执行点。"
+  },
+  "trace": [
+    {
+      "file": "packages/workflow/src/expression.ts",
+      "line": "434-438",
+      "code": "\t\tObject.defineProperty(data, sanitizerName, {\n\t\t\tvalue: sanitizer,\n\t\t\twritable: false,\n\t\t\tconfigurable: false,\n\t\t});",
+      "desc": "将 sanitizer 以 __sanitize 键挂到求值 data 上，供 PrototypeSanitizer 改写后的属性访问调用。此为防御装配点，不是 RCE sink。"
+    },
+    {
+      "file": "packages/workflow/src/expression.ts",
+      "line": "442-449",
+      "code": "\t\tconst constructorValidation = new RegExp(/\\.\\s*constructor/gm);\n\t\tif (parameterValue.match(constructorValidation)) {\n\t\t\tthrow new ExpressionError('Expression contains invalid constructor function call', {\n\t\t\t\tcauseDetailed: 'Constructor override attempt is not allowed due to security concerns',\n\t\t\t\trunIndex,\n\t\t\t\titemIndex,\n\t\t\t});\n\t\t}",
+      "desc": "正则仅匹配 .constructor；对 with 作用域内裸 Identifier constructor 无效。"
+    },
+    {
+      "file": "packages/workflow/src/expression-sandboxing.ts",
+      "line": "330-336",
+      "code": "export const sanitizer = (value: unknown): unknown => {\n\tconst propertyKey = String(value);\n\tif (!isSafeObjectProperty(propertyKey)) {\n\t\tthrow new ExpressionError(`Cannot access \"${propertyKey}\" due to security concerns`);\n\t}\n\treturn propertyKey;\n};",
+      "desc": "运行时属性键检查实现。原标注误将其作 critical：它是防御实现；当 AST 未改写/with 逃逸使危险访问不以 sanitizer 包装形式出现时，此函数根本不会被调用。降为 trace 上下文。"
+    },
+    {
+      "file": "packages/workflow/src/expression.ts",
+      "line": "470-472",
+      "code": "\tprivate renderExpression(expression: string, data: IWorkflowDataProxyData) {\n\t\ttry {\n\t\t\treturn evaluateExpression(expression, data);",
+      "desc": "renderExpression 将扩展后的表达式与 data 交给 evaluateExpression，进入 Tournament 执行。"
+    }
+  ],
+  "verify": 0
+}

@@ -1,0 +1,20 @@
+entry_id,field,before_file,before_line,before_code,after_file,after_line,after_code,reason
+entry-00099,entry_point,packages/cli/src/workflows/workflows.controller.ts,539,	@Post('/:workflowId/run'),packages/cli/src/workflows/workflows.controller.ts,539,	@Post('/:workflowId/run'),semantic_rebuild
+entry-00099,critical_operation,packages/workflow/src/expression-sandboxing.ts,244,"export const PrototypeSanitizer: ASTAfterHook = (ast, dataNode) => {",packages/workflow/src/expression-evaluator-proxy.ts,19-21,"export const evaluateExpression: Evaluator = (expr, data) => {
+	return evaluator(expr, data);
+};",semantic_rebuild
+entry-00099,trace,len=4,,,len=5,,,rewritten_for_semantic_flow
+entry-00100,entry_point,packages/workflow/src/expression.ts,368,	resolveSimpleParameterValue(,packages/workflow/src/expression.ts,368,	resolveSimpleParameterValue(,semantic_rebuild
+entry-00100,critical_operation,packages/workflow/src/expression-sandboxing.ts,330-336,"export const sanitizer = (value: unknown): unknown => {
+	const propertyKey = String(value);
+	if (!isSafeObjectProperty(propertyKey)) {
+		throw new ExpressionErr",packages/workflow/src/expression-evaluator-proxy.ts,19-21,"export const evaluateExpression: Evaluator = (expr, data) => {
+	return evaluator(expr, data);
+};",semantic_rebuild
+entry-00100,trace,len=5,,,len=4,,,rewritten_for_semantic_flow
+entry-00176,entry_point,packages/nodes-base/nodes/Code/Code.node.ts,206,"			const code = this.getNodeParameter(codeParameterName, 0) as string;",packages/nodes-base/nodes/Code/Code.node.ts,206,"			const code = this.getNodeParameter(codeParameterName, 0) as string;",semantic_rebuild
+entry-00176,critical_operation,packages/@n8n/task-runner-python/src/constants.py,126,BLOCKED_ATTRIBUTES = {,packages/@n8n/task-runner-python/src/task_analyzer.py,66-69,"        if node.attr in BLOCKED_ATTRIBUTES:
+            self._add_violation(
+                node.lineno, ERROR_DANGEROUS_ATTRIBUTE.format(attr=node.attr)
+     ",semantic_rebuild
+entry-00176,trace,len=7,,,len=3,,,rewritten_for_semantic_flow
