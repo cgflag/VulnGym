@@ -9,9 +9,9 @@
   },
   "critical_operation": {
     "file": "packages/@n8n/expression-runtime/src/extensions/extend.ts",
-    "line": "132-135",
-    "code": "\tif (foundFunction.type === 'native') {\n\t\t// eslint-disable-next-line @typescript-eslint/no-unsafe-return\n\t\treturn foundFunction.function.apply(input, args);\n\t}",
-    "desc": "native 回退拿到 Function 构造函数后，在这里 apply 执行攻击者传入的参数。真正跑起来的点，不是前面「选出 constructor」的分支。"
+    "line": "82-84",
+    "code": "\t\tif (inputAny && functionName && typeof inputAny[functionName] === 'function') {\n\t\t\t// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment\n\t\t\treturn { type: 'native', function: inputAny[functionName] };",
+    "desc": "类型扩展未命中时，无检查返回 input[functionName]；constructor 时拿到 Function。此为 vuln 树上首次交出 Function。补丁在函数入口加 UNSAFE 名检查（vuln 无该行可钉），未改 apply。见 CRITICAL_RULE。"
   },
   "trace": [
     {
@@ -34,9 +34,9 @@
     },
     {
       "file": "packages/@n8n/expression-runtime/src/extensions/extend.ts",
-      "line": "82-84",
-      "code": "\t\tif (inputAny && functionName && typeof inputAny[functionName] === 'function') {\n\t\t\t// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment\n\t\t\treturn { type: 'native', function: inputAny[functionName] };",
-      "desc": "类型扩展都没命中时，无名字检查就返回 input[functionName]。functionName 为 constructor 时拿到 Function。原 critical 标在这里——只是选出函数，还没执行。"
+      "line": "132-135",
+      "code": "\tif (foundFunction.type === 'native') {\n\t\t// eslint-disable-next-line @typescript-eslint/no-unsafe-return\n\t\treturn foundFunction.function.apply(input, args);\n\t}",
+      "desc": "拿到 native Function 后在此 apply 执行。表现位点；修复未改此行，故不作 critical（见 PATCH_NOTES / CANDIDATES）。"
     }
   ],
   "verify": 0

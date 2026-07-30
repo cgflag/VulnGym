@@ -21,6 +21,12 @@
       "desc": "脚本进入 PythonTaskRunnerSandbox。"
     },
     {
+      "file": "packages/@n8n/task-runner-python/src/task_analyzer.py",
+      "line": "237-240",
+      "code": "        tree = ast.parse(code)\n\n        security_validator = SecurityValidator(self._security_config)\n        security_validator.visit(tree)",
+      "desc": "TaskAnalyzer.validate：解析 AST 并 visit。属性拦截发生在 visit_Attribute，不是这个包装入口。"
+    },
+    {
       "file": "packages/@n8n/task-runner-python/src/constants.py",
       "line": 126,
       "code": "BLOCKED_ATTRIBUTES = {",

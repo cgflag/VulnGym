@@ -7,18 +7,21 @@
 
 ## Patched reference
 
-- Tag: `n8n@2.10.1`（advisory 修复线之一）
-- 同文件集合中 **新增** `"__objclass__",`（位于 `__self_class__` 与 introspection 段之间）
+- Tag: `n8n@2.10.1`
+- 同文件集合中新增 `"__objclass__",`
 
-## 含义（给选拔者）
+## 对标注的含义
 
-补丁改的是策略集合；**运行时是否逃逸**取决于 `visit_Attribute` 的 `node.attr in BLOCKED_ATTRIBUTES` 是否报违例。  
-因此：
+补丁改的是策略集合；运行时是否逃逸取决于 `visit_Attribute` 的 `node.attr in BLOCKED_ATTRIBUTES`。
 
-- 把 critical 放在集合字面量 = 描述「缺了什么数据」  
-- 把 critical 放在成员判断 = 描述「校验如何失败」← Issue #6 要求的语义
+- critical 钉成员判断 = 「校验如何失败」
+- 静态 `BLOCKED_ATTRIBUTES = {` = 数据缺项，Issue 不认作 critical
 
-## 命令备忘
+## getattr
+
+`BUILTINS_DENY` 已含 builtin `getattr`；`BLOCKED_ATTRIBUTES` 已含 `__getattr__`。本 CVE 补丁补的是 `__objclass__`，不是 getattr 路径。
+
+## 命令
 
 ```text
 git -C .cache/repos/n8n show 3af9095245:packages/@n8n/task-runner-python/src/constants.py

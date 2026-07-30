@@ -2,16 +2,17 @@
 
 ## 采用
 
-- entry_point：`workflows.controller.ts:539` `@Post('/:workflowId/run')`（原标注可用）
+- entry_point：`workflows.controller.ts:561-565` `executeManually(req.body, ...)`（相对原 `@Post` 更能体现输入进入）
 - critical：`expression-evaluator-proxy.ts:19-21` `evaluateExpression`
 - verify：0
 
-## 不采用
+## 不采用（详见 CANDIDATES.md）
 
-- `PrototypeSanitizer` 定义：防御钩子，不是执行点；Issue 也不认可 RCE critical 落在 sanitizer 上。
-- Tournament 构造：只是挂上钩子，不是用户表达式跑起来的地方。
-- `.constructor` 正则：漏检，放进 trace。
+- `@Post` 单独作 entry：只是路由标记 → 降到 trace
+- `PrototypeSanitizer` 定义：Issue 不认可 RCE critical 落 sanitizer
+- `visitMemberExpression` 作 critical：缺陷位点，但仍属 sanitizer 钩子族 → trace
+- Tournament 构造：只挂钩子
 
-## 补丁对照
+## sink vs 缺陷
 
-`n8n@2.5.1` 在 sandboxing 里加了 `visitWithStatement()` 直接抛错，说明漏洞版本缺的是对 `with` 的处理。
+按 `CRITICAL_RULE.md` 步 3–4：补丁在 sanitizer，但 Issue 禁 RCE critical 落 sanitizer 钩子 → critical 降级为 `evaluateExpression`；缺口留 trace。

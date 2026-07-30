@@ -2,15 +2,14 @@
 
 ## 采用
 
-- entry_point：`expression.ts:524` `renderExpression`（原标注可用）
-- critical：`reset.ts:46` `globalThis.__data.__sanitize = __sanitize`（普通赋值，可覆写）
+- entry_point：`expression.ts:534-536` `vmEvaluator.evaluate(...)`（相对原方法头更能体现 VM 入口）
+- critical：`reset.ts:46` 可写 `__sanitize`（位置原正确）
 - verify：0
 
 ## 不采用
 
-- 把 critical 改成 PrototypeSanitizer 的 path.replace：那是编译期插入过滤调用；本路径失守点是运行时槽位可写。
-- 改成 evaluate/apply 之类执行点：这条 entry 刻画的是「过滤被废掉」，不是另一条 RCE sink。
+- 方法签名 `renderExpression {` 单独作 entry
+- 把 critical 改成 PrototypeSanitizer 改写点或其它执行 sink——本条讲过滤被废掉
+- trace 与 entry/critical 完全重复同一节点
 
-## 说明
-
-位置与原数据相同，主要改 desc，并修正 trace 里 path.replace 的行号范围到完整语句（493-504）。
+候选表见 `CANDIDATES.md`。

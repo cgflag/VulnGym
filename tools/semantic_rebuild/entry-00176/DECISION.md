@@ -8,13 +8,13 @@
 
 ## 不采用
 
-- `constants.py` 里 `BLOCKED_ATTRIBUTES = {`：静态列表，Issue 点名不要当 critical。补丁改集合，但「放行/拦截」发生在成员判断。
-- 单独把 name-mangle（71–74 行）当 critical：对纯 `__objclass__` 本身就不触发，只能说明第二条线也帮不上忙。
+- `BLOCKED_ATTRIBUTES = {` 静态列表作 critical（Issue 点名）
+- 单独 name-mangle 作 critical
+- builtin `getattr` / deny 列表作本条 critical：主路径是 `__objclass__` 属性 AST，不是 `getattr()` 调用；`__getattr__` 已在黑名单
+- 仅 `validate()` 包装作 critical：太早
 
 ## 补丁对照
 
-漏洞 commit（2.9.2）集合里没有 `__objclass__`；`n8n@2.10.1` 同文件已加上。
+漏洞 commit（2.9.2）集合无 `__objclass__`；`n8n@2.10.1` 已加。
 
-## 校验
-
-`run_verify_batch.py entry-00176` 已通过。细节见 `PATCH_NOTES.md`、`VERIFY.md`。
+候选表见 `CANDIDATES.md`。

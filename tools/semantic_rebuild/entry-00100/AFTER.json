@@ -11,7 +11,7 @@
     "file": "packages/workflow/src/expression-evaluator-proxy.ts",
     "line": "19-21",
     "code": "export const evaluateExpression: Evaluator = (expr, data) => {\n\treturn evaluator(expr, data);\n};",
-    "desc": "和 00099 同一个执行出口。sanitizer 函数定义不是 sink。"
+    "desc": "和 00099 同一个执行出口。sanitizer 函数定义不是 sink；with 缺口见 trace / PATCH_NOTES。"
   },
   "trace": [
     {
@@ -28,9 +28,15 @@
     },
     {
       "file": "packages/workflow/src/expression-sandboxing.ts",
+      "line": "264-279",
+      "code": "\t\tvisitMemberExpression(path) {\n\t\t\tthis.traverse(path);\n\t\t\tconst node = path.node;\n\t\t\tif (!node.computed) {\n\t\t\t\t// This is static, so we're safe to error here\n\t\t\t\tif (node.property.type !== 'Identifier') {\n\t\t\t\t\tthrow new ExpressionError(\n\t\t\t\t\t\t`Unknown property type ${node.property.type} while sanitising expression`,\n\t\t\t\t\t);\n\t\t\t\t}\n\n\t\t\t\tif (!isSafeObjectProperty(node.property.name)) {\n\t\t\t\t\tthrow new ExpressionError(\n\t\t\t\t\t\t`Cannot access \"${node.property.name}\" due to security concerns`,\n\t\t\t\t\t);\n\t\t\t\t}",
+      "desc": "只检查 MemberExpression。with 里 Identifier constructor 不走这里。缺陷位点；Issue 不认 sanitizer 钩子作 RCE critical → 不升 critical。"
+    },
+    {
+      "file": "packages/workflow/src/expression-sandboxing.ts",
       "line": "330-336",
       "code": "export const sanitizer = (value: unknown): unknown => {\n\tconst propertyKey = String(value);\n\tif (!isSafeObjectProperty(propertyKey)) {\n\t\tthrow new ExpressionError(`Cannot access \"${propertyKey}\" due to security concerns`);\n\t}\n\treturn propertyKey;\n};",
-      "desc": "原 critical 标在这里。这是属性键检查实现；逃逸时常调用不到。降到 trace。"
+      "desc": "原 critical 标在这里。属性键检查实现；逃逸时常调不到。降到 trace。"
     },
     {
       "file": "packages/workflow/src/expression.ts",

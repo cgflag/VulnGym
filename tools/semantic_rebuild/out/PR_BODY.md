@@ -1,30 +1,44 @@
-## 关联 Issue：#6
+## Issue
 
-### 范围
+Fixes #6
 
-官方优先的 6 条 n8n 样本都改了：`00099 / 00100 / 00103 / 00176 / 00511 / 00512`。  
-`verify` 仍为 0。未直接改 `data/entries.jsonl`。
+## What this does
 
-### 改动摘要
+Re-checks `entry_point` / `critical_operation` / `trace` for the six priority n8n entries named in #6, against each entry’s vuln commit (and fix patches where useful). Updates those six rows in `data/entries.jsonl`. Leaves `verify` at `0`.
 
-| entry | 主要修正 |
-|-------|----------|
-| 00099 | critical：PrototypeSanitizer 定义 → `evaluateExpression` |
-| 00100 | critical：sanitizer 定义 → `evaluateExpression` |
-| 00103 | entry：`}` → `setResponseHeaders`；critical 保留漏 `trim` |
-| 00176 | critical：静态黑名单 → `visit_Attribute` 成员判断 |
-| 00511 | critical：native 回退选出函数 → `.apply` 执行 |
-| 00512 | critical 位置保留（可写 `__sanitize`）；收紧 desc / trace 行号 |
+## Mapping to #6
 
-说明与拒绝项：`tools/semantic_rebuild/out/NOTES.md`。  
-校验：`python tools/semantic_rebuild/run_verify_batch.py`（6 条 pass）。
+| Issue ask | Where |
+|-----------|--------|
+| Corrected `{file, line, code, desc}` | `data/entries.jsonl` + `tools/semantic_rebuild/out/entries.fixed.jsonl` |
+| Per-entry: old problem, new locus, why / why not | `entry-*/DECISION.md`, `CANDIDATES.md` |
+| Reviewable diff | `out/semantic_diff.csv` |
+| Nodes match source at commit | `python tools/semantic_rebuild/run_all.py` (line/code check only) |
+| entry = how input enters; critical ≠ wrapper/static/`}` | see table below |
+| SCHEMA | field shapes unchanged; `verify` still 0 |
 
-### 交付
+## Per entry
 
-- `out/entries.fixed.jsonl`、`out/semantic_diff.csv`、`out/NOTES.md`
-- 各 entry：`BEFORE.json` / `AFTER.json` / `DECISION.md`
-- `verify_nodes.py`、`run_verify_batch.py`
+| entry | Was wrong | Now |
+|-------|-----------|-----|
+| 00099 | critical on `PrototypeSanitizer` def; entry only `@Post` | entry `executeManually(req.body, …)`; critical `evaluateExpression` (sanitizer gap kept in trace — see `CRITICAL_RULE.md`) |
+| 00100 | critical on `sanitizer` body | same sink as 00099 |
+| 00103 | entry on `}` | entry `setResponseHeaders`; critical still missing `trim` (`553b24458e`) |
+| 00176 | critical on `BLOCKED_ATTRIBUTES = {` | critical `node.attr in BLOCKED_ATTRIBUTES` |
+| 00511 | “pick Function” vs `.apply` confusion | critical unchecked native return `82-84`; fix commit `1acdafe6ac` blocks names earlier, does not change `.apply` |
+| 00512 | weak entry/desc | entry `vmEvaluator.evaluate`; critical writable `__sanitize` (same line as fix) |
 
-### 和已有 PR
+Rule used for critical: `tools/semantic_rebuild/CRITICAL_RULE.md` (prefer patch locus; only 00099/00100 fall back to exec sink because #6 rejects RCE critical on sanitizer hooks).
 
-方向与 [#54](https://github.com/Tencent/VulnGym/pull/54) 接近；本 PR 带可复现核对，且不改 `verify`、不用 Tournament 构造当 critical。
+## How to check
+
+```bash
+python tools/semantic_rebuild/run_all.py
+```
+
+This checks formatting and that quoted `code` matches the checkout. It does **not** prove the semantic choice is right.
+
+## Notes
+
+- Full write-up: `tools/semantic_rebuild/out/NOTES.md`
+- `verify`: kept `0` on purpose (`VERIFY_POLICY.md`); bump after review if you agree
