@@ -1,30 +1,33 @@
 ## 关联 Issue：#6
 
-### 做了什么
+### 范围（先说清楚）
 
-对官方优先 n8n 样本中的 **3 条**做语义重标（非整库脚本、不碰 `verify`）：
+只改了官方优先样本里的 **3 条**：`entry-00099`、`entry-00100`、`entry-00176`。  
+`00103` / `00511` / `00512` **没有**做完，不声称 Issue 已全部解决。Issue 允许先交可靠子集。
 
-| entry | 原 critical 问题 | 新 critical |
-|-------|------------------|-------------|
-| entry-00099 | PrototypeSanitizer **定义** | `evaluateExpression`（Tournament 执行出口） |
-| entry-00100 | sanitizer **函数定义** | 同上（同 advisory 姊妹条，不同 entry/trace） |
-| entry-00176 | `BLOCKED_ATTRIBUTES` **静态集合** | `visit_Attribute` 成员判断施力点 |
+### 改了什么
 
-交付：
+| entry | 原来的 critical | 现在的 critical |
+|-------|-----------------|-----------------|
+| 00099 | `PrototypeSanitizer` 函数定义 | `evaluateExpression`（真正执行出口） |
+| 00100 | `sanitizer` 函数定义 | 同上（同 advisory，入口/trace 不同） |
+| 00176 | `BLOCKED_ATTRIBUTES = {` 静态集合 | `visit_Attribute` 里 `in BLOCKED_ATTRIBUTES` 的判断 |
 
-- `tools/semantic_rebuild/out/entries.fixed.jsonl` — 3 条完整 entry
+每条的原问题、选用理由、未采用点见 `tools/semantic_rebuild/out/NOTES.md`。  
+`{file,line,code}` 已在对应 commit 上对过源码（`run_verify_batch.py`）。  
+`verify` 仍为 0。未直接改 `data/entries.jsonl`。
+
+### 交付文件
+
+- `tools/semantic_rebuild/out/entries.fixed.jsonl`
 - `tools/semantic_rebuild/out/semantic_diff.csv`
-- `tools/semantic_rebuild/out/NOTES.md` — 每条原问题/理由/拒绝候选
-- 各 entry 目录：`BEFORE.json` / `AFTER.json` / `DECISION.md` / `VERIFY.md`
-- `tools/semantic_rebuild/verify_nodes.py` + `run_verify_batch.py` — code 级对齐校验
+- `tools/semantic_rebuild/out/NOTES.md`
+- 各 entry 下 `BEFORE.json` / `AFTER.json` / `DECISION.md`
+- `verify_nodes.py`、`run_verify_batch.py`
 
-**不修改** 仓库根 `data/entries.jsonl`（由维护者择优合入）。
+### 和已有 PR
 
-### 与已有 #6 PR
-
-- 方向对齐 [#54](https://github.com/Tencent/VulnGym/pull/54)「离开 sanitizer/静态表」。
-- **不采用** [#77](https://github.com/Tencent/VulnGym/pull/77) 将 Tournament 构造当 critical，以及 `verify=1`。
-- 差异：补丁锚点（`n8n@2.5.1` `visitWithStatement`；`n8n@2.10.1` `__objclass__`）、REJECTED 表、可复现 VERIFY。
+结论方向和 [#54](https://github.com/Tencent/VulnGym/pull/54) 接近。本 PR 侧重：可跑的源码核对、写清拒绝项、不改 `verify`、不把 Tournament 构造标成 critical（[#77](https://github.com/Tencent/VulnGym/pull/77)）。
 
 ### 复现
 
@@ -32,8 +35,3 @@
 python tools/semantic_rebuild/run_verify_batch.py entry-00099 entry-00100 entry-00176
 python tools/semantic_rebuild/build_deliverables.py
 ```
-
-### 明确不做
-
-- 不把本 PR 与 #4 定位脚本混装
-- 本批不含 00103/00511/00512（可后续增量）

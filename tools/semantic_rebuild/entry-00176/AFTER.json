@@ -1,37 +1,36 @@
 {
   "entry_id": "entry-00176",
   "report_id": "GHSA-MMGG-M5J7-F83H",
-  "note": "Draft AFTER nodes only; full entry merge pending. verify stays 0.",
   "entry_point": {
     "file": "packages/nodes-base/nodes/Code/Code.node.ts",
     "line": 206,
     "code": "\t\t\tconst code = this.getNodeParameter(codeParameterName, 0) as string;",
-    "desc": "在 isPyLang 分支通过 getNodeParameter 读取用户提交的 Python 脚本（pythonCode）。这是外部可控代码进入 Python Task Runner 校验与执行管线的入口，而非 JS runner 的 L189 分支。"
+    "desc": "Python Code 节点读取用户脚本（pythonCode），再交给 task runner。"
   },
   "critical_operation": {
     "file": "packages/@n8n/task-runner-python/src/task_analyzer.py",
     "line": "66-69",
     "code": "        if node.attr in BLOCKED_ATTRIBUTES:\n            self._add_violation(\n                node.lineno, ERROR_DANGEROUS_ATTRIBUTE.format(attr=node.attr)\n            )",
-    "desc": "visit_Attribute 以 BLOCKED_ATTRIBUTES 成员判断决定是否拦截危险属性访问。漏洞窗口内集合缺少 __objclass__，导致对该属性的 AST 访问不会在此报违例，沙箱逃逸在此「校验放过」成立。此处是策略的施力点，而非 constants.py 中的静态集合字面量定义。"
+    "desc": "visit_Attribute 用黑名单决定是否报错。漏洞版没有 __objclass__，这里会放过。判断点，不是 constants 里的集合字面量。"
   },
   "trace": [
     {
       "file": "packages/nodes-base/nodes/Code/Code.node.ts",
       "line": 207,
       "code": "\t\t\tconst sandbox = new PythonTaskRunnerSandbox(code, nodeMode, workflowMode, this);",
-      "desc": "用户脚本被装入 PythonTaskRunnerSandbox，随后进入 runner 侧校验与执行。"
+      "desc": "脚本进入 PythonTaskRunnerSandbox。"
     },
     {
       "file": "packages/@n8n/task-runner-python/src/constants.py",
       "line": 126,
       "code": "BLOCKED_ATTRIBUTES = {",
-      "desc": "属性黑名单的策略数据定义处。漏洞版本缺少 __objclass__（修复版本 n8n@2.10.1 已追加）。本节点仅作「缺项」上下文，不作为 critical_operation。"
+      "desc": "黑名单数据。2.9.2 缺 __objclass__，2.10.1 已补。只作上下文，不是 critical。"
     },
     {
       "file": "packages/@n8n/task-runner-python/src/task_analyzer.py",
       "line": "71-74",
       "code": "        if node.attr.startswith(\"_\") and \"__\" in node.attr:\n            parts = node.attr.split(\"__\", 1)\n            if len(parts) == 2 and parts[0].startswith(\"_\"):\n                self._add_violation(node.lineno, ERROR_NAME_MANGLED_ATTRIBUTE)",
-      "desc": "名称混淆启发式对纯双下划线属性（如 __objclass__）不触发：split 后 parts[0] 为空串。说明第二条防线也无法补上缺项，佐证主缺陷仍在黑名单成员判断。"
+      "desc": "name-mangle 检查对纯 __objclass__ 不触发（split 后首段为空）。"
     }
   ],
   "verify": 0

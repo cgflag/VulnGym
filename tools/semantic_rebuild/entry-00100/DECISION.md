@@ -1,19 +1,17 @@
-# DECISION — entry-00100
+# entry-00100
 
 ## 采用
 
-- **entry_point**：保留 `expression.ts:368` `resolveSimpleParameterValue`（同 advisory 的 API 入口视角）
-- **critical_operation**：与 00099 相同 — `evaluateExpression:19-21`
-- **verify**：0
+- entry_point：`expression.ts:368` `resolveSimpleParameterValue`（参数侧入口，和 00099 的 HTTP 入口分开）
+- critical：同 00099，`evaluateExpression:19-21`
+- verify：0
 
-## 拒绝
+## 不采用
 
-| 候选 | 为何拒绝 |
-|------|----------|
-| sanitizer 函数定义 :330-336 | 原标注；防御实现，逃逸成功时往往根本不被调用 |
-| defineProperty(__sanitize) :434 | 防御装配；可进 trace，不作 critical |
-| 改 entry_point 为 HTTP run | 会与 00099 同质化；本条保留参数求值入口更有信息量 |
+- `sanitizer` 函数定义：防御实现；绕过成功时经常调不到。
+- `defineProperty(__sanitize)`：装配防御，不是 sink。
+- 把 entry 改成和 00099 一样的 HTTP 路由：两条会挤在一起。
 
-## 与 00099 的分工
+## 和 00099
 
-同一 GHSA 两条 entry：00099 强调网络入口 + with/Identifier 缺口；00100 强调参数求值装配链。共享真实 RCE sink。
+同一 GHSA。差别在入口和 trace，不在强行换一个「看起来不同」的 critical。

@@ -1,27 +1,17 @@
-# DECISION — entry-00099
+# entry-00099
 
 ## 采用
 
-- **entry_point**：保留 `workflows.controller.ts:539` `@Post('/:workflowId/run')`
-- **critical_operation**：`expression-evaluator-proxy.ts:19-21` `evaluateExpression`
-- **verify**：0
+- entry_point：`workflows.controller.ts:539` `@Post('/:workflowId/run')`（原标注可用）
+- critical：`expression-evaluator-proxy.ts:19-21` `evaluateExpression`
+- verify：0
 
-## 拒绝
+## 不采用
 
-| 候选 | 为何拒绝 |
-|------|----------|
-| PrototypeSanitizer 定义 :244 | Issue #6 点名：RCE sink 不应落在 sanitizer；补丁加的是 visitWithStatement，说明缺口在 visitor 覆盖，但 critical 应是执行成立点 |
-| Tournament 构造 :9-12 | #77 做法；构造沙箱 ≠ 用户表达式获得 RCE |
-| 仅 regex :442 | 漏检环节，放 trace |
+- `PrototypeSanitizer` 定义：防御钩子，不是执行点；Issue 也不认可 RCE critical 落在 sanitizer 上。
+- Tournament 构造：只是挂上钩子，不是用户表达式跑起来的地方。
+- `.constructor` 正则：漏检，放进 trace。
 
-## 补丁锚点
+## 补丁对照
 
-`n8n@2.5.1` 的 `expression-sandboxing.ts` 出现：
-
-```ts
-visitWithStatement() {
-  throw new ExpressionWithStatementError();
-}
-```
-
-证明漏洞窗口缺少对 `with` 的 AST 处置；与 JFrog CVE-2026-1470 一致。
+`n8n@2.5.1` 在 sandboxing 里加了 `visitWithStatement()` 直接抛错，说明漏洞版本缺的是对 `with` 的处理。
