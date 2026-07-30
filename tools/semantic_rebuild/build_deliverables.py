@@ -9,7 +9,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "tools" / "semantic_rebuild" / "out"
 ENTRIES = ROOT / "data" / "entries.jsonl"
-IDS = ["entry-00099", "entry-00100", "entry-00176"]
+IDS = [
+    "entry-00099",
+    "entry-00100",
+    "entry-00103",
+    "entry-00176",
+    "entry-00511",
+    "entry-00512",
+]
 
 
 def load_after(eid: str) -> dict:

@@ -1,0 +1,37 @@
+{
+  "entry_id": "entry-00512",
+  "report_id": "GHSA-6CQR-8CFR-67F8",
+  "entry_point": {
+    "file": "packages/workflow/src/expression.ts",
+    "line": 524,
+    "code": "\tprivate renderExpression(expression: string, data: IWorkflowDataProxyData) {",
+    "desc": "宿主侧把表达式送进求值（含 VM 路径）。用户表达式从这里进入运行时。"
+  },
+  "critical_operation": {
+    "file": "packages/@n8n/expression-runtime/src/runtime/reset.ts",
+    "line": 46,
+    "code": "\tglobalThis.__data.__sanitize = __sanitize;",
+    "desc": "普通赋值挂上 __sanitize，没有 defineProperty 锁住。运行期可被改成恒等函数，PrototypeSanitizer 插入的过滤全部失效。这条路径的根因就是槽位可写，所以 critical 留在这里。"
+  },
+  "trace": [
+    {
+      "file": "packages/workflow/src/expression.ts",
+      "line": 524,
+      "code": "\tprivate renderExpression(expression: string, data: IWorkflowDataProxyData) {",
+      "desc": "进入求值。"
+    },
+    {
+      "file": "packages/workflow/src/expression-sandboxing.ts",
+      "line": "493-504",
+      "code": "\t\t\t\tpath.replace(\n\t\t\t\t\tb.memberExpression(\n\t\t\t\t\t\t// eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any\n\t\t\t\t\t\tnode.object as any,\n\t\t\t\t\t\t// eslint-disable-next-line @typescript-eslint/no-unsafe-argument\n\t\t\t\t\t\tb.callExpression(b.memberExpression(dataNode, sanitizerIdentifier), [\n\t\t\t\t\t\t\t// eslint-disable-next-line @typescript-eslint/no-explicit-any\n\t\t\t\t\t\t\tnode.property as any,\n\t\t\t\t\t\t]),\n\t\t\t\t\t\ttrue,\n\t\t\t\t\t),\n\t\t\t\t);",
+      "desc": "编译期把动态属性改成 obj[this.__sanitize(expr)]，运行时依赖 __data.__sanitize。"
+    },
+    {
+      "file": "packages/@n8n/expression-runtime/src/runtime/reset.ts",
+      "line": 46,
+      "code": "\tglobalThis.__data.__sanitize = __sanitize;",
+      "desc": "可覆写的过滤槽位；与 critical 同一行。"
+    }
+  ],
+  "verify": 0
+}
