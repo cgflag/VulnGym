@@ -1,51 +1,51 @@
-# Fix notes for #6 (six priority n8n entries)
+# #6 修复说明（优先 6 条 n8n）
 
-Rule: `CRITICAL_RULE.md`. Verify flag: `VERIFY_POLICY.md` (`verify` stays 0).
+规则：`CRITICAL_RULE.md`。`verify` 策略：`VERIFY_POLICY.md`（保持 0）。
 
-Updated in `data/entries.jsonl`. Diff for review: `out/semantic_diff.csv`.
+主数据：`data/entries.jsonl` 已更新。Review 用 diff：`out/semantic_diff.csv`。
 
-`run_all.py` only checks that `{file,line,code}` matches the vuln commit. It does not validate semantics.
+`run_all.py` 只检查 `{file,line,code}` 与 vuln commit 一致，不验证语义对错。
 
-## Entries
+## 逐条
 
 ### entry-00099
 
-- Problem: critical on `PrototypeSanitizer` definition; entry was only `@Post`.
-- Change: entry → `executeManually(req.body, …)`; critical → `evaluateExpression`.
-- Rejected: sanitizer class/hooks as RCE critical (#6); Tournament ctor.
-- Patch: `n8n@2.5.1` adds `visitWithStatement` (missing in vuln → described in trace).
+- 原问题：critical 在 PrototypeSanitizer 定义；entry 只有 `@Post`。
+- 修改：entry → `executeManually(req.body, …)`；critical → `evaluateExpression`。
+- 不选：sanitizer 类/钩子作 RCE critical（#6）；Tournament 构造。
+- 补丁：`n8n@2.5.1` 增加 `visitWithStatement`（vuln 没有 → 写在 trace）。
 
 ### entry-00100
 
-- Problem: critical on `sanitizer` function body.
-- Change: same critical as 00099; entry kept at `resolveSimpleParameterValue`.
-- Trace includes the MemberExpression-only gap.
+- 原问题：critical 在 sanitizer 函数体。
+- 修改：critical 同 00099；entry 仍为 `resolveSimpleParameterValue`。
+- trace 含只覆盖 MemberExpression 的缺口。
 
 ### entry-00103
 
-- Problem: entry on a closing `}`.
-- Change: entry → `setResponseHeaders`; critical stays at `toLowerCase` without `trim`.
-- Patch: `553b24458e` → `trim().toLowerCase()`.
-- Trace uses the `sendStaticResponse` call site so it does not duplicate the entry body.
+- 原问题：entry 标在 `}`。
+- 修改：entry → `setResponseHeaders`；critical 仍为未 `trim` 的 `toLowerCase`。
+- 补丁：`553b24458e` → `trim().toLowerCase()`。
+- trace 用 `sendStaticResponse` 调用点，避免与 entry 整段重复。
 
 ### entry-00176
 
-- Problem: critical on static `BLOCKED_ATTRIBUTES = {`.
-- Change: critical → membership test in `visit_Attribute`.
-- Rejected: static set as critical; treating builtin `getattr` as this CVE’s critical (fix adds `__objclass__`).
+- 原问题：critical 在静态 `BLOCKED_ATTRIBUTES = {`。
+- 修改：critical → `visit_Attribute` 里的成员判断。
+- 不选：静态集合作 critical；把 builtin `getattr` 当本 CVE 的 critical（修复补的是 `__objclass__`）。
 
 ### entry-00511
 
-- Problem: original critical stopped at selecting `input[functionName]`; an intermediate version moved to `.apply`.
-- Change: critical back at unchecked native return (`82-84`). `.apply` stays in trace.
-- Patch: `1acdafe6ac` adds `UNSAFE_PROPERTY_NAMES` at the start of `findExtendedFunction` (no change to `.apply`).
+- 原问题：原文停在选出 `input[functionName]`；中间一度改到 `.apply`。
+- 修改：critical 回到无检查 native 返回（`82-84`）；`.apply` 留在 trace。
+- 补丁：`1acdafe6ac` 在 `findExtendedFunction` 入口加 `UNSAFE_PROPERTY_NAMES`（未改 `.apply`）。
 
 ### entry-00512
 
-- Problem: critical line was already right; entry/desc/trace were weak.
-- Change: entry → `vmEvaluator.evaluate`; critical kept on writable `__sanitize`.
-- Patch: same fix commit locks `__sanitize` with `defineProperty`.
+- 原问题：critical 行大致对，entry/desc/trace 偏弱。
+- 修改：entry → `vmEvaluator.evaluate`；critical 仍为可写 `__sanitize`。
+- 补丁：同一修复提交用 `defineProperty` 锁住该槽位。
 
-## Candidates / patches
+## 候选与补丁
 
-Each `entry-*/` has `CANDIDATES.md` and `PATCH_NOTES.md` for the “why this locus / why not the others” part of #6.
+各 `entry-*/` 下有 `CANDIDATES.md`、`PATCH_NOTES.md`，对应 #6「理由 + 未采用候选」。

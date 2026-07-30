@@ -1,1 +1,1 @@
-Working on #6: semantic re-annotation for the six priority n8n entries (not line-offset scripts). Scope: 00099, 00100, 00103, 00176, 00511, 00512. Will open a PR with corrected nodes, per-entry notes, and a diff; `verify` stays 0.
+已认领本任务

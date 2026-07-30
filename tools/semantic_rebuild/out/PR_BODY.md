@@ -1,44 +1,44 @@
-## Issue
+## 关联 Issue
 
 Fixes #6
 
-## What this does
+## 做了什么
 
-Re-checks `entry_point` / `critical_operation` / `trace` for the six priority n8n entries named in #6, against each entry’s vuln commit (and fix patches where useful). Updates those six rows in `data/entries.jsonl`. Leaves `verify` at `0`.
+按 #6 要求，对官方优先的 6 条 n8n 样本重确认 `entry_point` / `critical_operation` / `trace`，对照各 entry 的 vuln commit（并参考修复补丁）。已更新 `data/entries.jsonl` 中这 6 行。`verify` 仍为 `0`。
 
-## Mapping to #6
+## 与 #6 交付/验收的对应
 
-| Issue ask | Where |
-|-----------|--------|
-| Corrected `{file, line, code, desc}` | `data/entries.jsonl` + `tools/semantic_rebuild/out/entries.fixed.jsonl` |
-| Per-entry: old problem, new locus, why / why not | `entry-*/DECISION.md`, `CANDIDATES.md` |
-| Reviewable diff | `out/semantic_diff.csv` |
-| Nodes match source at commit | `python tools/semantic_rebuild/run_all.py` (line/code check only) |
-| entry = how input enters; critical ≠ wrapper/static/`}` | see table below |
-| SCHEMA | field shapes unchanged; `verify` still 0 |
+| Issue 要求 | 本 PR |
+|------------|--------|
+| 修正后的 `{file, line, code, desc}` | `data/entries.jsonl`；另有 `tools/semantic_rebuild/out/entries.fixed.jsonl` |
+| 每条：原问题、位置、为何选/不选 | 各 `entry-*/DECISION.md`、`CANDIDATES.md` |
+| 便于 review 的 diff | `out/semantic_diff.csv` |
+| 节点能在对应 commit 源码中对上 | `python tools/semantic_rebuild/run_all.py`（只做行号/code 对齐） |
+| entry 体现输入如何进入；critical 非包装/静态/`}` | 见下表 |
+| 满足 SCHEMA | 字段形态未改；`verify` 保持 0 |
 
-## Per entry
+## 逐条摘要
 
-| entry | Was wrong | Now |
-|-------|-----------|-----|
-| 00099 | critical on `PrototypeSanitizer` def; entry only `@Post` | entry `executeManually(req.body, …)`; critical `evaluateExpression` (sanitizer gap kept in trace — see `CRITICAL_RULE.md`) |
-| 00100 | critical on `sanitizer` body | same sink as 00099 |
-| 00103 | entry on `}` | entry `setResponseHeaders`; critical still missing `trim` (`553b24458e`) |
-| 00176 | critical on `BLOCKED_ATTRIBUTES = {` | critical `node.attr in BLOCKED_ATTRIBUTES` |
-| 00511 | “pick Function” vs `.apply` confusion | critical unchecked native return `82-84`; fix commit `1acdafe6ac` blocks names earlier, does not change `.apply` |
-| 00512 | weak entry/desc | entry `vmEvaluator.evaluate`; critical writable `__sanitize` (same line as fix) |
+| entry | 原问题 | 现在 |
+|-------|--------|------|
+| 00099 | critical 在 PrototypeSanitizer 定义；entry 仅 `@Post` | entry：`executeManually(req.body, …)`；critical：`evaluateExpression`（sanitizer 缺口留在 trace，见 `CRITICAL_RULE.md`） |
+| 00100 | critical 在 sanitizer 函数体 | critical 同 00099 |
+| 00103 | entry 标在 `}` | entry：`setResponseHeaders`；critical 仍为缺 `trim`（补丁 `553b24458e`） |
+| 00176 | critical 在静态 `BLOCKED_ATTRIBUTES = {` | critical：`node.attr in BLOCKED_ATTRIBUTES` |
+| 00511 | 「选出 Function」与 `.apply` 易混 | critical：无检查 native 返回 `82-84`；修复 `1acdafe6ac` 在入口拦名字，未改 `.apply` |
+| 00512 | entry/desc 偏弱 | entry：`vmEvaluator.evaluate`；critical：可写 `__sanitize`（与修复同行） |
 
-Rule used for critical: `tools/semantic_rebuild/CRITICAL_RULE.md` (prefer patch locus; only 00099/00100 fall back to exec sink because #6 rejects RCE critical on sanitizer hooks).
+critical 选取规则：`tools/semantic_rebuild/CRITICAL_RULE.md`（优先补丁落点；仅 00099/00100 因 #6 不认可 RCE critical 落 sanitizer 钩子而退到执行出口）。
 
-## How to check
+## 如何检查
 
 ```bash
 python tools/semantic_rebuild/run_all.py
 ```
 
-This checks formatting and that quoted `code` matches the checkout. It does **not** prove the semantic choice is right.
+检查格式，以及引用的 `code` 是否与 checkout 一致。**不能**证明语义选择一定正确。
 
-## Notes
+## 说明
 
-- Full write-up: `tools/semantic_rebuild/out/NOTES.md`
-- `verify`: kept `0` on purpose (`VERIFY_POLICY.md`); bump after review if you agree
+- 更细的修复说明：`tools/semantic_rebuild/out/NOTES.md`
+- `verify` 故意保持 `0`（见 `VERIFY_POLICY.md`）；若维护者认可，再 bump 即可
