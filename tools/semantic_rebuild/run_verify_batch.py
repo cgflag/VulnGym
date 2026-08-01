@@ -2,6 +2,7 @@
 """Verify AFTER.json nodes against the entry's vuln commit."""
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -63,6 +64,12 @@ DEFAULT = [
 
 
 def materialize(commit: str, files: list[str]) -> None:
+    if not re.fullmatch(r"[0-9a-f]{7,40}", commit):
+        raise ValueError(f"refusing non-hex commit: {commit!r}")
+    for f in files:
+        rel = f.replace("\\", "/")
+        if ".." in rel.split("/") or rel.startswith("/") or re.match(r"^[A-Za-z]:/", rel):
+            raise ValueError(f"refusing unsafe repo path: {f!r}")
     subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=N8N, check=False, capture_output=True)
     subprocess.check_call(["git", "checkout", "--detach", commit], cwd=N8N)
     for f in files:

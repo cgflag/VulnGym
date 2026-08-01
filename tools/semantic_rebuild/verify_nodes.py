@@ -25,6 +25,22 @@ def parse_line(line) -> tuple[int, int]:
     return a, b
 
 
+def resolve_repo_file(repo: Path, rel: str) -> Path:
+    """Join a repo-relative path and reject traversal / absolute escapes."""
+    rel = (rel or "").replace("\\", "/").strip()
+    if not rel or rel.startswith("/") or re.match(r"^[A-Za-z]:/", rel):
+        raise ValueError(f"file must be repo-relative, got {rel!r}")
+    parts = [p for p in rel.split("/") if p not in ("", ".")]
+    if any(p == ".." for p in parts):
+        raise ValueError(f"path traversal refused: {rel!r}")
+    repo_r = repo.resolve()
+    path = (repo_r.joinpath(*parts)).resolve()
+    try:
+        path.relative_to(repo_r)
+    except ValueError as exc:
+        raise ValueError(f"path escapes repo root: {rel!r}") from exc
+    return path
+
 def slice_file(path: Path, start: int, end: int) -> str:
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     # 1-based inclusive
@@ -34,7 +50,10 @@ def slice_file(path: Path, start: int, end: int) -> str:
 
 def check_node(repo: Path, node: dict, label: str) -> dict:
     rel = node["file"].replace("\\", "/")
-    path = repo / rel
+    try:
+        path = resolve_repo_file(repo, rel)
+    except ValueError as exc:
+        return {"label": label, "ok": False, "error": str(exc)}
     start, end = parse_line(node["line"])
     if not path.is_file():
         return {"label": label, "ok": False, "error": f"missing file {rel}"}

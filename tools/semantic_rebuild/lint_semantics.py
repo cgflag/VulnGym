@@ -37,8 +37,9 @@ def check_node_schema(eid: str, label: str, node: dict) -> list[str]:
         if req not in node or node[req] in (None, ""):
             errs.append(f"{eid}: {label} missing {req}")
     f = node.get("file")
-    if isinstance(f, str) and (f.startswith("/") or "\\" in f[:2] or f.startswith("http")):
-        errs.append(f"{eid}: {label} file should be repo-relative, got {f!r}")
+    if isinstance(f, str):
+        if f.startswith("/") or "\\" in f[:2] or f.startswith("http") or ".." in f.replace("\\", "/").split("/"):
+            errs.append(f"{eid}: {label} file should be repo-relative, got {f!r}")
     line = node.get("line")
     if isinstance(line, int):
         if line < 1:
